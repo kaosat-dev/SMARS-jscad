@@ -6,6 +6,11 @@ const {linear_extrude} = require('@jscad/csg/api').extrusions
 const {rotate, translate, mirror} = require('@jscad/csg/api').transformations
 const {union, difference} = require('@jscad/csg/api').booleanOps
 
+const {flatten} = require('./arrays')
+const align = require('./utils/align')
+const distribute = require('./utils/distribute')
+const center = require('./utils/center')
+
 const dimensions = {
   D1_mini: {
     board: {size: [34.2, 25.6, 1]}
@@ -112,72 +117,11 @@ const joypad_dimensions = {
   ]
 }
 
-// todo , add align on etc
-const align = (position, ...shapes) => {
-  const bounds = shapes.map(shape => shape.getBounds())
-  // console.log('firstBounds', JSON.stringify(bounds))
-  const offsets = bounds.map(bound => {
-    /* const offset = [
-      bounds[0][0].x - bound[0].x,
-      bounds[0][0].y - bound[0].y
-    ]
-    console.log('offset', JSON.stringify(bounds[0][0]),'fbla', JSON.stringify(bound[0])) */
-    let offset
-    if (position === 'top') {
-      offset = bounds[0][0].y - bound[0].y
-    } else if (position === 'bottom') {
-      offset = bound[0].y - bounds[0][0].y
-    }
-    return offset
-  })
-
-  /* if(position === 'top'){
-
-  } */
-  const offsetShapes = shapes.map((shape, index) => {
-    return translate([0, offsets[index]], shape)
-  })
-  console.log('offsets', JSON.stringify(offsets))
-  return offsetShapes
-}
-const distribute = (spreadType = 'leftToRight', ...shapes) => {
-  // TODO flatten/to array
-  shapes = shapes[0]
-  const offsetShapes = shapes.slice(1).map((shape, index) => {
-    let offset
-    const prevShape = shapes[index]
-
-    if (spreadType === 'leftToRight') {
-      const bounds = shape.getBounds()
-      const prevBounds = prevShape.getBounds()
-      offset = bounds[0].x - prevBounds[1].x
-    }
-    return translate([offset, 0], shape)
-  })
-
-  return [shapes[0]].concat(offsetShapes)
-}
-
-const center = (axes = [1, 1, 1], ...shapes) => {
-  let minX = +Infinity
-  let maxX = -Infinity
-  // TODO flatten/to array
-  shapes = shapes[0]
-
-  shapes.forEach(shape => {
-    const bound = shape.getBounds()
-
-    if (bound[0].x < minX) {
-      minX = bound[0].x
-    }
-    if (bound[1].x > maxX) {
-      maxX = bound[1].x
-    }
-  })
-
-  let offset = [(maxX - minX) * 0.5, 0]
-  offset[0] = offset[0] + shapes[0].getBounds()[0].x
-  return shapes.map(shape => translate(offset, shape))
+const extractCenterPosition = (shape) => {
+  const bounds = shape.getBounds()
+  const position = [bounds[1].x + bounds[0].x, bounds[1].y + bounds[0].y].map(x => x * 0.5)
+  console.log('bounds', bounds, position)
+  return position
 }
 
 module.exports = function emitter (params) {
@@ -218,30 +162,93 @@ module.exports = function emitter (params) {
     )
   )
 
+  // battery holder
+
   // box itself
-  const wallsThickness = 2
+  const wallsThickness = 3 // thickess of the 'sides'
+  const platesThickness = 3 // thickness of the 'plates'
+  const cutsClearance = 0.1 // how much bigger to make holes for cuts
   const widthInner = Math.max(D1_trippler_base.board.size[1], joyPad.board.size[1])
   const width = widthInner + wallsThickness * 2
   const length = D1_trippler_base.board.size[0] + joyPad.board.size[0]
-
-  const tripplerOffsetL = D1_trippler_base.board.size[0] - length / 2
-  const joypadOffsetL = (D1_trippler_base.board.size[0] / 2 + joyPad.board.size[0] / 2) - tripplerOffsetL
 
   let alignedStuff = align('top', tripplerPcb, joypadPcb)
   alignedStuff = distribute('leftToRight', alignedStuff)
   alignedStuff = center([1, 1], alignedStuff)
 
+  const joyCenter = extractCenterPosition(alignedStuff[1])
+  const oledCenter = [19, -5]
+
   // side roundings
   const endRounding = circle({r: width / 2, center: true})
   const endRoundingOffsetL = 6
 
+  // data for the assembly holes
+  const boxMountHoleDia = 3
+  const boxMountHoleSideOffset = 1
+  const boxMountHoleBorderWOffset = width / 2 - boxMountHoleDia / 2 - boxMountHoleSideOffset
+  const boxMountHolesData = [
+    { // not so sure about this one
+      diameter: boxMountHoleDia,
+      position: [length / 2 + 5, 0]
+    },
+    {
+      diameter: boxMountHoleDia,
+      position: [length / 2 - 10, boxMountHoleBorderWOffset]
+    },
+    {
+      diameter: boxMountHoleDia,
+      position: [0, boxMountHoleBorderWOffset]
+    },
+    {
+      diameter: boxMountHoleDia,
+      position: [-length / 2 + 10, boxMountHoleBorderWOffset]
+    },
+    // other side
+    { // not so sure about this one
+      diameter: boxMountHoleDia,
+      position: [-length / 2 - 5, 0]
+    },
+    {
+      diameter: boxMountHoleDia,
+      position: [length / 2 - 10, -boxMountHoleBorderWOffset]
+    },
+    {
+      diameter: boxMountHoleDia,
+      position: [0, -boxMountHoleBorderWOffset]
+    },
+    {
+      diameter: boxMountHoleDia,
+      position: [-length / 2 + 10, -boxMountHoleBorderWOffset]
+    }
+  ]
+
+  // the generic shape of the controller
   const boxShape = difference(
     hull(
     translate([-length / 2 + endRoundingOffsetL, 0], endRounding),
     translate([length / 2 - endRoundingOffsetL, 0], endRounding)
-  ),
-  union(mountHoles)
+  )
+  // union(mountHoles)
 )
+
+  // all the mount holes for the top plate
+  const boxShapeTopHoles = union(
+    boxMountHolesData.map(holeData => {
+      return translate(holeData.position,
+        circle({r: holeData.diameter / 2, center: true})
+      )
+    })
+  )
+
+  const boxShapeTop = difference([
+    boxShape,
+    boxShapeTopHoles,
+    // correctly placed joypad hole
+    translate(joyCenter, circle({r: joyPad.joystick.diameter / 2 + cutsClearance, center: true})),
+    // correctly place oled screen hole
+    translate(oledCenter, square({size: D1_oled_shield.screen.size.map(x => x += cutsClearance), center: true}))
+  ])
 
   // standoffs to hold main pcb in place
   const standOffsBase = D1_trippler_base.mountHoles
@@ -260,6 +267,19 @@ module.exports = function emitter (params) {
   ) */
   return [
     boxShape,
+    boxShapeTop,
+    // top
+    linear_extrude({height: platesThickness}, boxShapeTop),
+    // sides ??
+    translate(
+      [0, 0, -15],
+      color('gray', linear_extrude({height: 15}, boxShape))
+    ),
+    // bottom ??
+    translate(
+      [0, 0, -18],
+      linear_extrude({height: platesThickness}, boxShape)
+    ),
    // oledCutout,
     // joypadCutOut,
     // translate([+tripplerOffsetL, 0], tripplerPcb),
