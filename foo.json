@@ -1,0 +1,23 @@
+{
+  "name": "@kaosat-dev/smars-jscad",
+  "version": "0.0.1",
+  "description": "SMARS modular robot, recreated in jscad",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "jscad",
+    "cad",
+    "robot",
+    "robot",
+    "parametric",
+    "SMARS"
+  ],
+  "author": "Mark 'kaosat-dev' Moissette & sons",
+  "license": "MIT",
+  "dependencies": {
+    "@jscad/csg": "0.5.2",
+    "jscad-tree-experiment": "github:kaosat-dev/jscad-tree-experiments"
+  }
+}
