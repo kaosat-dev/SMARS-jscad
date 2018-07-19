@@ -29,8 +29,8 @@ function main (params) {
   params = Object.assign({}, paramDefaults, params)
   params = Object.assign({}, params, {ultrasonicSensor: ultrasonicSensors[params.ultrasonicSensor.model]})
   let results = []
-  // results = results.concat(ultrasonicSensorHolder(params))
-  results = results.concat(emmiter(params))
+  results = results.concat(ultrasonicSensorHolder(params))
+  // results = results.concat(emmiter(params))
   /* results = params.showTop ? results.concat([translate([0, 0, params.plateOffset], bodyTop(params, servos))]) : results
   results = params.showBottom ? results.concat([bodyBottom(params, servos)]) : results
   results = params.showMounts ? results.concat(assemblyMounts) : results

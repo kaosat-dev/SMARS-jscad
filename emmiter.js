@@ -196,7 +196,15 @@ module.exports = function emitter (params) {
   const endRoundingOffsetL = 6
 
   // battery holder outline
-  const batteryHolderShape = square({size: battery_dimensions.AA.size, center: true})
+  const batteryHolderShape = square({
+    size: [
+      battery_dimensions.AA.size[0] + wallsThickness + 7,
+      battery_dimensions.AA.size[1] + wallsThickness + 3
+    ], 
+    center: true,
+    round: true,
+    //r: 4
+  })
 
   // data for the assembly holes
   const boxMountHoleDia = 3
@@ -241,9 +249,26 @@ module.exports = function emitter (params) {
   // the generic base shape of the controller
   let boxShape = chain_hull(
       translate([-length / 2 + endRoundingOffsetL, 0], endRounding),
-      translate([length / 2 - endRoundingOffsetL, 0], endRounding)
+      translate([length / 2 - endRoundingOffsetL, 0], endRounding),
+      // battery mount
+
+      //translate([0, 0], square({size: [width, width-10], center: true})),
+      //start
+      //translate([20, -20], circle({r: 14.5 / 2})),
+      //offsets
+      //translate([20, -40], circle({r: 14.5 / 2})),
+      //translate([-20, -40], circle({r: 14.5 / 2})),
+      //translate([0, -10], batteryHolderShape),
+      //end
+      //translate([-20, -20], circle({r: 14.5 / 2})),
+
+      //translate([-length / 2 + endRoundingOffsetL, 0], endRounding)
     )
-  boxShape = chain_hull(boxShape, translate([0, -30], batteryHolderShape))
+  //boxShape = chain_hull(boxShape, translate([0, -30], batteryHolderShape))
+  /*boxShape = difference(
+    boxShape,
+    translate([0, -15], batteryHolderShape)
+  )*/
 
   // all the mount holes for the top plate
   const boxShapeTopHoles = union(
@@ -267,7 +292,8 @@ module.exports = function emitter (params) {
   // bottom
   const boxShapeBottom = difference([
     boxShape,
-    boxShapeTopHoles
+    boxShapeTopHoles,
+    translate([0, -15], batteryHolderShape)
   ])
 
   // sides
@@ -278,15 +304,21 @@ module.exports = function emitter (params) {
     ),
     boxMountHolesData.map(holeData => {
       return translate(holeData.position,
-        circle({r: (holeData.diameter + wallsThickness / 2 + cutsClearance) / 2, center: true})
+        circle({r: (holeData.diameter + wallsThickness + cutsClearance) / 2, center: true})
       )
     })
   )
   // remove holes for mounts, they are pass-through
   boxShapeSides = difference(
     boxShapeSides,
-    boxShapeTopHoles
+    boxShapeTopHoles,
   )
+  // remove anything 'sticking'out
+  const excess = difference(
+    boxShapeSides,
+    boxShape
+  )
+  boxShapeSides = difference(boxShapeSides, excess)
 
   // standoffs to hold main pcb in place
   const standOffsBase = D1_trippler_base.mountHoles
@@ -303,17 +335,20 @@ module.exports = function emitter (params) {
     translate([-length + endRoundingsLOffset, 0, width / 4], endRoundings),
     translate([length - endRoundingsLOffset, 0, width / 4], endRoundings)
   ) */
+
+  const bolts = boxMountHolesData.map(holeData => {
+    
+  })
   return [
     boxShapeTop,
     boxShapeBottom,
     boxShapeSides,
 
-    translate([-battery_dimensions.AA.size[0] / 2, -30, 10],
+    translate([-battery_dimensions.AA.size[0] / 2, -12, -6],
         rotate([0, 90, 0],
         battery()
       )
     ),
-
     // sides
     color('gray', linear_extrude({height: sidesHeight}, boxShapeSides)),
     // bottom

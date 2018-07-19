@@ -1,16 +1,19 @@
+//16 , 38
 const variants = {
   us100: {
-    board: {size: [44, 26, 14]},
+    board: {size: [44, 25, 2]},
     sensors: [
-      {diameter: 20, height: 15},
-      {diameter: 20, height: 15}
+      {diameter: 16, height: 12, position: [-11.5, 0]},
+      {diameter: 16, height: 12, position: [11.5, 0]}
     ],
-    mountHoles: {
-      dia: 3,
-      xOffset: 40,
-      yOffset: 20,
-      positioning: 'center'
-    }
+    mountHoles: [
+      {
+        diameter: 3,
+        xOffset: 40,
+        yOffset: 20,
+        positioning: 'center'
+      }
+    ]
   }
 }
 
