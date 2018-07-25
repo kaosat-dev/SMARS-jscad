@@ -1,4 +1,5 @@
 const {translate} = require('@jscad/csg/api').transformations
+const getBounds = require('./bounds')
 
 const distribute = (spreadType = 'leftToRight', ...shapes) => {
   // TODO flatten/to array
@@ -8,8 +9,8 @@ const distribute = (spreadType = 'leftToRight', ...shapes) => {
     const prevShape = shapes[index]
 
     if (spreadType === 'leftToRight') {
-      const bounds = shape.getBounds()
-      const prevBounds = prevShape.getBounds()
+      const bounds = getBounds(shape)
+      const prevBounds = getBounds(prevShape)
       offset = bounds[0].x - prevBounds[1].x
     }
     return translate([offset, 0], shape)

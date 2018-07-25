@@ -1,4 +1,5 @@
 const {translate} = require('@jscad/csg/api').transformations
+const getBounds = require('./bounds')
 
 const center = (axes = [1, 1, 1], ...shapes) => {
   let minX = +Infinity
@@ -7,7 +8,7 @@ const center = (axes = [1, 1, 1], ...shapes) => {
   shapes = shapes[0]
 
   shapes.forEach(shape => {
-    const bounds = shape.getBounds()
+    const bounds = getBounds(shape)
 
     if (bounds[0].x < minX) {
       minX = bounds[0].x
@@ -18,7 +19,7 @@ const center = (axes = [1, 1, 1], ...shapes) => {
   })
 
   let offset = [(maxX - minX) * 0.5, 0]
-  offset[0] = offset[0] + shapes[0].getBounds()[0].x
+  offset[0] = offset[0] + getBounds(shapes[0])[0].x
   return shapes.map(shape => translate(offset, shape))
 }
 

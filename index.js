@@ -9,36 +9,46 @@ const emmiter = require('./emmiter')
 
 const paramDefaults = {
   quality: 120,
-  robotName: 'ISOLOS',
+  robotName: 'SMARS',
   ultrasonicSensor: {model: 'us100'}
 }
 
 function getParameterDefinitions () {
   return [
-    { name: 'mainParams', type: 'group', caption: 'Main parameters' },
-    { name: 'visualParams', type: 'group', caption: 'Visual toggles' },
+    { name: 'emmiter', type: 'group', caption: 'Emmiter' },
+    { name: 'showEmmiter', type: 'checkbox', checked: false, caption: 'Show emmiter:' },
 
-    { name: 'showTop', type: 'checkbox', checked: false, caption: 'Show top:' },
-    { name: 'showBottom', type: 'checkbox', checked: false, caption: 'Show bottom:' },
-    { name: 'showMotors', type: 'checkbox', checked: false, caption: 'Show mounts:' }
+    { name: 'showEmitTop', type: 'checkbox', checked: false, caption: 'Show top:' },
+    { name: 'showEmitBottom', type: 'checkbox', checked: false, caption: 'Show bottom:' },
+    { name: 'showEmitSides', type: 'checkbox', checked: true, caption: 'Show sides' },
+    { name: 'readyToPrint', type: 'checkbox', checked: false, caption: 'Ready for 3d print' },
+
+    { name: 'ultrasonic', type: 'group', caption: 'Ultrasonic sensor' },
+    { name: 'showUltrasonic', type: 'checkbox', checked: true, caption: 'Show ultrasonic sensor holder:' },
+    { name: 'usConnectorCutout', type: 'checkbox', checked: true, caption: 'cutout for connectors' },
+    { name: 'usPilon', type: 'checkbox', checked: true, caption: 'add "pilon" to hold pcb' },
+    {
+      name: 'usModel',
+      type: 'choice',
+      values: Object.keys(ultrasonicSensors), // these are the values that will be supplied to your script
+      captions: Object.keys(ultrasonicSensors),
+      // if omitted, the items in the 'values' array are used
+      caption: 'Sensor model:', // optional, displayed left of the input field
+      initial: 'us100' // optional, default selected value
+      // if omitted, the first item is selected by default
+    },
+    { name: 'usTestSlice', type: 'checkbox', checked: true, caption: 'create a slice to test print' },
   ]
 }
 
 function main (params) {
-  console.log('initial params', params)
   params = Object.assign({}, paramDefaults, params)
-  params = Object.assign({}, params, {ultrasonicSensor: ultrasonicSensors[params.ultrasonicSensor.model]})
+  params = Object.assign({}, params, {ultrasonicSensor: ultrasonicSensors[params.usModel]})
+  // return emmiter(params)
+  console.log('params', params)
   let results = []
-  results = results.concat(ultrasonicSensorHolder(params))
-  // results = results.concat(emmiter(params))
-  /* results = params.showTop ? results.concat([translate([0, 0, params.plateOffset], bodyTop(params, servos))]) : results
-  results = params.showBottom ? results.concat([bodyBottom(params, servos)]) : results
-  results = params.showMounts ? results.concat(assemblyMounts) : results
-
-   // just for visual help
-  results = params.showServos ? results.concat(servos) : results
-  results = params.showPwmDriver ? results.concat(translate([0, 0, legMountsHeight], rotate([0, 0, 45], adafruitI2CPwmDriver()))) : results
-  */
+  results = params.showUltrasonic ? results.concat(ultrasonicSensorHolder(params)) : results
+  results = params.showEmmiter ? results.concat(emmiter(params)) : results
   return results
 }
 

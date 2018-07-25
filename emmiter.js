@@ -10,6 +10,7 @@ const {flatten} = require('./arrays')
 const align = require('./utils/align')
 const distribute = require('./utils/distribute')
 const center = require('./utils/center')
+const extractCenterPosition = require('./utils/extractCenterPosition')
 
 const dimensions = {
   D1_mini: {
@@ -126,13 +127,6 @@ const joypad_dimensions = {
   ]
 }
 
-const extractCenterPosition = (shape) => {
-  const bounds = shape.getBounds()
-  const position = [bounds[1].x + bounds[0].x, bounds[1].y + bounds[0].y].map(x => x * 0.5)
-  console.log('bounds', bounds, position)
-  return position
-}
-
 module.exports = function emitter (params) {
   const {D1_trippler_base, D1_oled_shield} = dimensions
   const joyPad = joypad_dimensions
@@ -200,10 +194,10 @@ module.exports = function emitter (params) {
     size: [
       battery_dimensions.AA.size[0] + wallsThickness + 7,
       battery_dimensions.AA.size[1] + wallsThickness + 3
-    ], 
+    ],
     center: true,
-    round: true,
-    //r: 4
+    round: true
+    // r: 4
   })
 
   // data for the assembly holes
@@ -249,26 +243,26 @@ module.exports = function emitter (params) {
   // the generic base shape of the controller
   let boxShape = chain_hull(
       translate([-length / 2 + endRoundingOffsetL, 0], endRounding),
-      translate([length / 2 - endRoundingOffsetL, 0], endRounding),
+      translate([length / 2 - endRoundingOffsetL, 0], endRounding)
       // battery mount
 
-      //translate([0, 0], square({size: [width, width-10], center: true})),
-      //start
-      //translate([20, -20], circle({r: 14.5 / 2})),
-      //offsets
-      //translate([20, -40], circle({r: 14.5 / 2})),
-      //translate([-20, -40], circle({r: 14.5 / 2})),
-      //translate([0, -10], batteryHolderShape),
-      //end
-      //translate([-20, -20], circle({r: 14.5 / 2})),
+      // translate([0, 0], square({size: [width, width-10], center: true})),
+      // start
+      // translate([20, -20], circle({r: 14.5 / 2})),
+      // offsets
+      // translate([20, -40], circle({r: 14.5 / 2})),
+      // translate([-20, -40], circle({r: 14.5 / 2})),
+      // translate([0, -10], batteryHolderShape),
+      // end
+      // translate([-20, -20], circle({r: 14.5 / 2})),
 
-      //translate([-length / 2 + endRoundingOffsetL, 0], endRounding)
+      // translate([-length / 2 + endRoundingOffsetL, 0], endRounding)
     )
-  //boxShape = chain_hull(boxShape, translate([0, -30], batteryHolderShape))
-  /*boxShape = difference(
+  // boxShape = chain_hull(boxShape, translate([0, -30], batteryHolderShape))
+  /* boxShape = difference(
     boxShape,
     translate([0, -15], batteryHolderShape)
-  )*/
+  ) */
 
   // all the mount holes for the top plate
   const boxShapeTopHoles = union(
@@ -311,7 +305,7 @@ module.exports = function emitter (params) {
   // remove holes for mounts, they are pass-through
   boxShapeSides = difference(
     boxShapeSides,
-    boxShapeTopHoles,
+    boxShapeTopHoles
   )
   // remove anything 'sticking'out
   const excess = difference(
@@ -337,29 +331,48 @@ module.exports = function emitter (params) {
   ) */
 
   const bolts = boxMountHolesData.map(holeData => {
-    
-  })
-  return [
-    boxShapeTop,
-    boxShapeBottom,
-    boxShapeSides,
 
+  })
+
+  let results = []
+  if (params.showEmitTop) {
+    results = results.concat(
+      // 2d outline
+      !params.readyToPrint ? boxShapeTop : [],
+      // top
+      translate([0, 0, sidesHeight],
+        linear_extrude({height: platesThickness}, boxShapeTop)
+      )
+    )
+  }
+  if (params.showEmitBottom) {
+    results = results.concat(
+      // 2d outline
+      !params.readyToPrint ? boxShapeBottom : [],
+      // bottom
+      translate(
+        [0, 0, -platesThickness],
+        linear_extrude({height: platesThickness}, boxShapeBottom)
+      )
+    )
+  }
+
+  if (params.showEmitSides) {
+    results = results.concat(
+      // 2d outline
+      !params.readyToPrint ? boxShapeSides : [],
+      // sides
+      color('gray', linear_extrude({height: sidesHeight}, boxShapeSides))
+    )
+  }
+  return flatten(results)
+  return [
     translate([-battery_dimensions.AA.size[0] / 2, -12, -6],
         rotate([0, 90, 0],
         battery()
       )
     ),
-    // sides
-    color('gray', linear_extrude({height: sidesHeight}, boxShapeSides)),
-    // bottom
-    translate(
-      [0, 0, -platesThickness],
-      linear_extrude({height: platesThickness}, boxShapeBottom),
-    ),
-    // top
-    /*translate([0, 0, sidesHeight],
-      linear_extrude({height: platesThickness}, boxShapeTop)
-    ),*/
+
    // oledCutout,
     // joypadCutOut,
     // translate([+tripplerOffsetL, 0], tripplerPcb),

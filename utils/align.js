@@ -1,9 +1,9 @@
 const {translate} = require('@jscad/csg/api').transformations
+const getBounds = require('./bounds')
 
 // todo , add align on etc
 const align = (position, ...shapes) => {
-  const bounds = shapes.map(shape => shape.getBounds())
-  // console.log('firstBounds', JSON.stringify(bounds))
+  const bounds = shapes.map(shape => getBounds(shape))
   const offsets = bounds.map(bound => {
     /* const offset = [
       bounds[0][0].x - bound[0].x,
