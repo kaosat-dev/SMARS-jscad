@@ -62,6 +62,7 @@ module.exports = function ultrasonicSensorHolder (params) {
     )
   }
 
+  
   // connectors cutout, optional
   if (params.usConnectorCutout) {
     sensorHolder = difference(
@@ -82,6 +83,7 @@ module.exports = function ultrasonicSensorHolder (params) {
       )
     )
   }
+
 
   return sensorHolder
 

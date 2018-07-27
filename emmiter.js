@@ -3,8 +3,8 @@ const {cylinder, sphere, cube} = require('@jscad/csg/api').primitives3d
 const {color} = require('@jscad/csg/api').color
 const {hull, chain_hull} = require('@jscad/csg/api').transformations
 const {linear_extrude} = require('@jscad/csg/api').extrusions
-const {rotate, translate, mirror, contract, expand} = require('@jscad/csg/api').transformations
-const {union, difference} = require('@jscad/csg/api').booleanOps
+const {rotate, translate, scale, mirror, contract, expand} = require('@jscad/csg/api').transformations
+const {union, difference, intersection} = require('@jscad/csg/api').booleanOps
 
 const {flatten} = require('./arrays')
 const align = require('./utils/align')
@@ -133,13 +133,13 @@ module.exports = function emitter (params) {
 
   // trippler base
   const holesOffset = [-D1_trippler_base.board.size[0] / 2, -D1_trippler_base.board.size[1] / 2]
-  const mountHoles = D1_trippler_base.mountHoles
+  const tripplerMountHoles = D1_trippler_base.mountHoles
     .map(holeData => translate(holeData.position, circle({r: holeData.diameter / 2, fn: 40, center: true})))
     .map(x => translate(holesOffset, x))
 
   const tripplerPcb = difference(
     square({size: D1_trippler_base.board.size, center: true}),
-    union(mountHoles)
+    union(tripplerMountHoles)
   )
 
   // oled
@@ -173,6 +173,7 @@ module.exports = function emitter (params) {
   const cutsClearance = 0.1 // how much bigger to make holes for cuts
   const pcbClearance = 0.8 // how much distance should there be from the pcbs's 'sides'
   const sidesHeight = 15 // height between lowest point of top plate and highest of bottom plate
+  const endRoundingSegments = 64
 
   const widthInner = Math.max(D1_trippler_base.board.size[1], joyPad.board.size[1])
   const width = widthInner + wallsThickness * 2 + pcbClearance * 2
@@ -183,10 +184,11 @@ module.exports = function emitter (params) {
   alignedStuff = center([1, 1], alignedStuff)
 
   const joyCenter = extractCenterPosition(alignedStuff[1])
+  const tripplerCenter = extractCenterPosition(alignedStuff[0])
   const oledCenter = [19, -5]
 
   // side roundings
-  const endRounding = circle({r: width / 2, center: true})
+  const endRounding = circle({r: width / 2, center: true, fn: endRoundingSegments})
   const endRoundingOffsetL = 6
 
   // battery holder outline
@@ -204,40 +206,42 @@ module.exports = function emitter (params) {
   const boxMountHoleDia = 3
   const boxMountHoleSideOffset = 1
   const boxMountHoleBorderWOffset = width / 2 - boxMountHoleDia / 2 - boxMountHoleSideOffset
+  const extremeSidesOffset = width / 4 + boxMountHoleDia / 2
+
   const boxMountHolesData = [
     { // not so sure about this one
       diameter: boxMountHoleDia,
-      position: [length / 2 + 5, 0]
+      position: [length / 2 + extremeSidesOffset, 0]
     },
-    {
+    /* {
       diameter: boxMountHoleDia,
-      position: [length / 2 - 10, boxMountHoleBorderWOffset]
-    },
+      position: [length / 2 - 5, boxMountHoleBorderWOffset]
+    }, */
     {
       diameter: boxMountHoleDia,
       position: [0, boxMountHoleBorderWOffset]
     },
-    {
+    /* {
       diameter: boxMountHoleDia,
-      position: [-length / 2 + 10, boxMountHoleBorderWOffset]
-    },
+      position: [-length / 2 + 5, boxMountHoleBorderWOffset]
+    }, */
     // other side
     { // not so sure about this one
       diameter: boxMountHoleDia,
-      position: [-length / 2 - 5, 0]
+      position: [-length / 2 - extremeSidesOffset, 0]
     },
-    {
+    /* {
       diameter: boxMountHoleDia,
-      position: [length / 2 - 10, -boxMountHoleBorderWOffset]
-    },
+      position: [length / 2 - 5, -boxMountHoleBorderWOffset]
+    }, */
     {
       diameter: boxMountHoleDia,
       position: [0, -boxMountHoleBorderWOffset]
-    },
-    {
-      diameter: boxMountHoleDia,
-      position: [-length / 2 + 10, -boxMountHoleBorderWOffset]
     }
+    /* {
+      diameter: boxMountHoleDia,
+      position: [-length / 2 + 5, -boxMountHoleBorderWOffset]
+    }*/
   ]
 
   // the generic base shape of the controller
@@ -322,14 +326,6 @@ module.exports = function emitter (params) {
     union(standOffsBase)
   )
 
-  /* const endRoundings = sphere({r: width / 2 + wallsThickness})
-  const endRoundingsLOffset = width + wallsThickness
-  const foo = union(
-    boxMain,
-    translate([-length + endRoundingsLOffset, 0, width / 4], endRoundings),
-    translate([length - endRoundingsLOffset, 0, width / 4], endRoundings)
-  ) */
-
   const bolts = boxMountHolesData.map(holeData => {
 
   })
@@ -365,14 +361,89 @@ module.exports = function emitter (params) {
       color('gray', linear_extrude({height: sidesHeight}, boxShapeSides))
     )
   }
+
+  // battery holder
+  if (params.showEmitBattery) {
+    results = results.concat(
+      translate([-battery_dimensions.AA.size[0] / 2, -13, -8],
+        rotate([0, 90, 0], battery())
+      )
+    )
+  }
+
+  if (params.showEmitPcbHolder) {
+    const lowHeight = 1
+    const highHeight = 3
+    const stubsReduction = 0.3
+    const sideBorders = difference(
+      contract(wallsThickness + cutsClearance, 1, boxShape),
+      contract(wallsThickness * 2.5, 1, boxShape)
+    )
+
+    const tripplerStubsShapes = D1_trippler_base.mountHoles
+      .map(holeData => translate(holeData.position, circle({r: holeData.diameter / 2 - stubsReduction, fn: 40, center: true})))
+      .map(x => translate(holesOffset, x))
+    const tripplerStubs = linear_extrude({height: 5},
+      translate(tripplerCenter, union(tripplerStubsShapes))
+    )
+    const tripplerPcbBaseShape = square({size: D1_trippler_base.board.size, center: true})
+    const joyPcbBaseShape = square({size: joyPad.board.size, center: true})
+
+    const offsetTripplerPcbBaseShape = translate(tripplerCenter, tripplerPcbBaseShape)
+    const offsetJoyPcbBaseShape = translate(joyCenter, joyPcbBaseShape)
+
+    const joyStubsShapes = joyPad.mountHoles
+      .map(holeData => translate(holeData.position, circle({r: holeData.diameter / 2 - stubsReduction, fn: 40, center: true})))
+      .map(x => translate(joyholesOffset, x))
+    const joyStubs = linear_extrude({height: 6},
+      translate(joyCenter, union(joyStubsShapes))
+    )
+
+    const floob = tripplerMountHoles.slice(0, 6).map(x => translate(tripplerCenter, x))
+    const flooba = tripplerMountHoles.slice(6).map(x => translate(tripplerCenter, x))
+    const flaab = joyStubsShapes.map(x => translate(joyCenter, x))
+    const tripplerBase = linear_extrude({height: lowHeight},
+          union(
+            chain_hull(floob),
+            chain_hull(flooba)
+          )
+    )
+
+    const joyBase = linear_extrude({height: highHeight},
+      chain_hull(flaab)
+    )
+
+    let pcbHolder = union(
+      linear_extrude({height: lowHeight + 1},
+        difference(sideBorders,
+          union(boxMountHolesData.map(holeData => {
+            return translate(holeData.position,
+              // twice the clearance since we need the space for the vertical through 'columns'
+              circle({r: (holeData.diameter + wallsThickness + cutsClearance * 2) / 2, center: true})
+            )
+          }))
+
+        )
+      ),
+      // outlines/border
+      // linear_extrude({height: 6}, pcbHolderShape),
+      // the actual 3d geometry
+      joyStubs,
+      joyBase,
+      tripplerStubs,
+      tripplerBase
+    )
+    // cutout pcb shapes
+    pcbHolder = difference(
+      pcbHolder,
+      translate([0, 0, lowHeight / 2], linear_extrude({height: 10}, offsetTripplerPcbBaseShape)),
+      translate([0, 0, highHeight / 2], linear_extrude({height: 10}, offsetJoyPcbBaseShape))
+    )
+    pcbHolder = union([pcbHolder, joyStubs, tripplerStubs])
+    results = results.concat(pcbHolder)//, pcbBaseShapes)
+  }
   return flatten(results)
   return [
-    translate([-battery_dimensions.AA.size[0] / 2, -12, -6],
-        rotate([0, 90, 0],
-        battery()
-      )
-    ),
-
    // oledCutout,
     // joypadCutOut,
     // translate([+tripplerOffsetL, 0], tripplerPcb),

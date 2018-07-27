@@ -16,15 +16,19 @@ const paramDefaults = {
 function getParameterDefinitions () {
   return [
     { name: 'emmiter', type: 'group', caption: 'Emmiter' },
-    { name: 'showEmmiter', type: 'checkbox', checked: false, caption: 'Show emmiter:' },
+    { name: 'showEmmiter', type: 'checkbox', checked: true, caption: 'Show emmiter:' },
 
     { name: 'showEmitTop', type: 'checkbox', checked: false, caption: 'Show top:' },
-    { name: 'showEmitBottom', type: 'checkbox', checked: false, caption: 'Show bottom:' },
-    { name: 'showEmitSides', type: 'checkbox', checked: true, caption: 'Show sides' },
+    { name: 'showEmitBottom', type: 'checkbox', checked: true, caption: 'Show bottom:' },
+    { name: 'showEmitSides', type: 'checkbox', checked: false, caption: 'Show sides' },
+    { name: 'showEmitBattery', type: 'checkbox', checked: true, caption: 'Show battery holder:' },
+
+    { name: 'showEmitPcbHolder', type: 'checkbox', checked: true, caption: 'Show pcb holder:' },
+
     { name: 'readyToPrint', type: 'checkbox', checked: false, caption: 'Ready for 3d print' },
 
     { name: 'ultrasonic', type: 'group', caption: 'Ultrasonic sensor' },
-    { name: 'showUltrasonic', type: 'checkbox', checked: true, caption: 'Show ultrasonic sensor holder:' },
+    { name: 'showUltrasonic', type: 'checkbox', checked: false, caption: 'Show ultrasonic sensor holder:' },
     { name: 'usConnectorCutout', type: 'checkbox', checked: true, caption: 'cutout for connectors' },
     { name: 'usPilon', type: 'checkbox', checked: true, caption: 'add "pilon" to hold pcb' },
     {
@@ -44,8 +48,7 @@ function getParameterDefinitions () {
 function main (params) {
   params = Object.assign({}, paramDefaults, params)
   params = Object.assign({}, params, {ultrasonicSensor: ultrasonicSensors[params.usModel]})
-  // return emmiter(params)
-  console.log('params', params)
+  console.log('params foo', params)
   let results = []
   results = params.showUltrasonic ? results.concat(ultrasonicSensorHolder(params)) : results
   results = params.showEmmiter ? results.concat(emmiter(params)) : results
