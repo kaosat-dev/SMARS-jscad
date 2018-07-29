@@ -12,6 +12,8 @@ const distribute = require('./utils/distribute')
 const center = require('./utils/center')
 const extractCenterPosition = require('./utils/extractCenterPosition')
 
+const roundedRectangle = require('./lib/roundedRect')
+
 const dimensions = {
   D1_mini: {
     board: {size: [34.2, 25.6, 1]}
@@ -73,7 +75,7 @@ const dimensions = {
   },
   D1_oled_shield: {
     board: {size: [33, 25.6, 1]},
-    screen: {size: [21, 18, 2]}
+    screen: {size: [18, 13, 2]}
   }
 }
 
@@ -172,7 +174,7 @@ module.exports = function emitter (params) {
   const platesThickness = 3 // thickness of the 'plates'
   const cutsClearance = 0.1 // how much bigger to make holes for cuts
   const pcbClearance = 0.8 // how much distance should there be from the pcbs's 'sides'
-  const sidesHeight = 15 // height between lowest point of top plate and highest of bottom plate
+  const sidesHeight = 18 // height between lowest point of top plate and highest of bottom plate
   const endRoundingSegments = 64
 
   const widthInner = Math.max(D1_trippler_base.board.size[1], joyPad.board.size[1])
@@ -185,7 +187,10 @@ module.exports = function emitter (params) {
 
   const joyCenter = extractCenterPosition(alignedStuff[1])
   const tripplerCenter = extractCenterPosition(alignedStuff[0])
-  const oledCenter = [19, -5]
+
+  const tripplerMountHolePosA = D1_trippler_base.mountHoles.map(data => data.position[0] + holesOffset[0] + tripplerCenter[0])
+  const blockWidth = tripplerMountHolePosA[3] - tripplerMountHolePosA[2]
+  const oledCenter = [tripplerMountHolePosA[2] + blockWidth / 2 + 0.5, -3]
 
   // side roundings
   const endRounding = circle({r: width / 2, center: true, fn: endRoundingSegments})
@@ -241,7 +246,7 @@ module.exports = function emitter (params) {
     /* {
       diameter: boxMountHoleDia,
       position: [-length / 2 + 5, -boxMountHoleBorderWOffset]
-    }*/
+    } */
   ]
 
   // the generic base shape of the controller
@@ -318,18 +323,6 @@ module.exports = function emitter (params) {
   )
   boxShapeSides = difference(boxShapeSides, excess)
 
-  // standoffs to hold main pcb in place
-  const standOffsBase = D1_trippler_base.mountHoles
-    .map(holeData => translate(holeData.position, circle({r: holeData.diameter / 2 - 0.1, fn: 40, center: true})))
-    .map(x => translate(holesOffset, x))
-  const standOffs = linear_extrude({height: 7},
-    union(standOffsBase)
-  )
-
-  const bolts = boxMountHolesData.map(holeData => {
-
-  })
-
   let results = []
   if (params.showEmitTop) {
     results = results.concat(
@@ -354,11 +347,73 @@ module.exports = function emitter (params) {
   }
 
   if (params.showEmitSides) {
+    const switchBodySize = [14, 5, 6]
+    const swichHoldersSize = [22, 1, 6]
+    const swichTriggerSize = [8, 4, 6]
+    const switchPosition = [15, -width / 2 + 3.5, sidesHeight - swichHoldersSize[2]]
+
+    let switchCut = union(
+      cube({size: switchBodySize, center: [true, true, false]}),
+      translate(
+        [0, -switchBodySize[1] / 2 + swichHoldersSize[1] / 2, 0],
+        cube({size: swichHoldersSize, center: [true, true, false]})
+      ),
+      translate(
+        [0, -switchBodySize[1] / 2 - swichTriggerSize[1] / 2, 0],
+        cube({size: swichTriggerSize, center: [true, true, false]})
+      )
+    )
+
+    let sidesMain = color('gray', linear_extrude({height: sidesHeight}, boxShapeSides))
+    const tripplerMountHolePos = D1_trippler_base.mountHoles.map(data => data.position[0] + holesOffset[0] + tripplerCenter[0])
+    const usbXoffset = tripplerMountHolePos[5] - tripplerMountHolePos[4]
+    const usbPosition = [// 45
+      tripplerMountHolePos[5] - usbXoffset * 0.5,
+      width / 2,
+      15.5
+      // sidesHeight / 2
+    ]
+    // .map(holeData
+    const usbCutShape = roundedRectangle({size: [11, 6], radius: 1})
+    const ubsCut = translate(
+      usbPosition,
+      rotate([90, 0, 0], linear_extrude({height: 10}, usbCutShape))
+    )
+
+    sidesMain = difference(
+      sidesMain,
+      ubsCut
+    )
+
+    sidesMain = difference(
+      sidesMain,
+      mirror([0, 1, 0], translate(switchPosition, switchCut))
+    )
+    // cutout for print tryout
+    /* if (params.testPrintSlice) {
+      sidesMain = intersection(
+        sidesMain,
+        translate(
+          [60, 20, 0],
+          cube({size: [60, 50, 30], center: [true, true, false]})
+        )
+      )
+    } */
+    if (params.testPrintSlice) {
+      sidesMain = intersection(
+        sidesMain,
+        translate(
+          [15, -20, 0],
+          cube({size: [40, 50, 30], center: [true, true, false]})
+        )
+      )
+    }
+
     results = results.concat(
       // 2d outline
       !params.readyToPrint ? boxShapeSides : [],
       // sides
-      color('gray', linear_extrude({height: sidesHeight}, boxShapeSides))
+      sidesMain
     )
   }
 
@@ -372,9 +427,23 @@ module.exports = function emitter (params) {
   }
 
   if (params.showEmitPcbHolder) {
-    const lowHeight = 1
-    const highHeight = 3
+    const lowHeight = 2.5
+    const lowCutHeight = 1
+    const highHeight = 3.5
+    const highCutHeight = 1// highHeight / 2 - 0.5
     const stubsReduction = 0.3
+    const tripplerStubsHeight = 5
+    const joyStubsHeight = 7
+
+    const cableHoleHalfWidth = 2.5
+    const cableHoles = [
+      {size: [10, cableHoleHalfWidth * 2], position: [19, -width / 2 + cableHoleHalfWidth]},
+      {size: [10, cableHoleHalfWidth * 2], position: [-10, -width / 2 + cableHoleHalfWidth]},
+      // {size: [10, cableHoleHalfWidth * 2], position: [-39, -width / 2 + cableHoleHalfWidth]}
+      {size: [10, cableHoleHalfWidth * 2], position: [19, width / 2 - cableHoleHalfWidth]},
+      {size: [10, cableHoleHalfWidth * 2], position: [-10, width / 2 - cableHoleHalfWidth]}
+    ]
+
     const sideBorders = difference(
       contract(wallsThickness + cutsClearance, 1, boxShape),
       contract(wallsThickness * 2.5, 1, boxShape)
@@ -383,7 +452,7 @@ module.exports = function emitter (params) {
     const tripplerStubsShapes = D1_trippler_base.mountHoles
       .map(holeData => translate(holeData.position, circle({r: holeData.diameter / 2 - stubsReduction, fn: 40, center: true})))
       .map(x => translate(holesOffset, x))
-    const tripplerStubs = linear_extrude({height: 5},
+    const tripplerStubs = linear_extrude({height: tripplerStubsHeight},
       translate(tripplerCenter, union(tripplerStubsShapes))
     )
     const tripplerPcbBaseShape = square({size: D1_trippler_base.board.size, center: true})
@@ -395,35 +464,33 @@ module.exports = function emitter (params) {
     const joyStubsShapes = joyPad.mountHoles
       .map(holeData => translate(holeData.position, circle({r: holeData.diameter / 2 - stubsReduction, fn: 40, center: true})))
       .map(x => translate(joyholesOffset, x))
-    const joyStubs = linear_extrude({height: 6},
+    const joyStubs = linear_extrude({height: joyStubsHeight},
       translate(joyCenter, union(joyStubsShapes))
     )
 
-    const floob = tripplerMountHoles.slice(0, 6).map(x => translate(tripplerCenter, x))
-    const flooba = tripplerMountHoles.slice(6).map(x => translate(tripplerCenter, x))
-    const flaab = joyStubsShapes.map(x => translate(joyCenter, x))
+    const tripllerShapesSide1 = tripplerMountHoles.slice(0, 6).map(x => translate(tripplerCenter, x))
+    const tripllerShapesSide2 = tripplerMountHoles.slice(6).map(x => translate(tripplerCenter, x))
     const tripplerBase = linear_extrude({height: lowHeight},
           union(
-            chain_hull(floob),
-            chain_hull(flooba)
+            chain_hull(tripllerShapesSide1),
+            chain_hull(tripllerShapesSide2)
           )
     )
 
     const joyBase = linear_extrude({height: highHeight},
-      chain_hull(flaab)
+      chain_hull(joyStubsShapes.map(x => translate(joyCenter, x)))
     )
 
-    let pcbHolder = union(
-      linear_extrude({height: lowHeight + 1},
-        difference(sideBorders,
-          union(boxMountHolesData.map(holeData => {
-            return translate(holeData.position,
-              // twice the clearance since we need the space for the vertical through 'columns'
-              circle({r: (holeData.diameter + wallsThickness + cutsClearance * 2) / 2, center: true})
-            )
-          }))
+    const boxMpuntHolesColumnCutouts = union(boxMountHolesData.map(holeData => {
+      return translate(holeData.position,
+        // twice the clearance since we need the space for the vertical through 'columns'
+        circle({r: (holeData.diameter + wallsThickness + cutsClearance * 2) / 2, center: true})
+      )
+    }))
 
-        )
+    let pcbHolder = union(
+      linear_extrude({height: lowHeight},
+        difference(sideBorders, boxMpuntHolesColumnCutouts)
       ),
       // outlines/border
       // linear_extrude({height: 6}, pcbHolderShape),
@@ -436,21 +503,20 @@ module.exports = function emitter (params) {
     // cutout pcb shapes
     pcbHolder = difference(
       pcbHolder,
-      translate([0, 0, lowHeight / 2], linear_extrude({height: 10}, offsetTripplerPcbBaseShape)),
-      translate([0, 0, highHeight / 2], linear_extrude({height: 10}, offsetJoyPcbBaseShape))
+      translate([0, 0, lowCutHeight], linear_extrude({height: 10}, offsetTripplerPcbBaseShape)),
+      translate([0, 0, highCutHeight], linear_extrude({height: 10}, offsetJoyPcbBaseShape))
     )
     pcbHolder = union([pcbHolder, joyStubs, tripplerStubs])
+
+    const holeCutouts = cableHoles
+      .map(holeData => translate(holeData.position, roundedRectangle({size: holeData.size, radius: 1})))
+      .map(hole => linear_extrude({height: 10}, hole))
+      // cylinder({r: holeData.diameter / 2, h: 10, center: true})
+    pcbHolder = difference(
+      pcbHolder,
+      ...holeCutouts
+    )
     results = results.concat(pcbHolder)//, pcbBaseShapes)
   }
   return flatten(results)
-  return [
-   // oledCutout,
-    // joypadCutOut,
-    // translate([+tripplerOffsetL, 0], tripplerPcb),
-    // translate([-joypadOffsetL, 0], joypadPcb)
-    alignedStuff[0],
-    alignedStuff[1]
-    // boxBaseShape,
-    // standOffs
-  ]
 }

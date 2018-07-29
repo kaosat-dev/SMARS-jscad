@@ -15,6 +15,9 @@ const paramDefaults = {
 
 function getParameterDefinitions () {
   return [
+
+    { name: 'testPrintSlice', type: 'checkbox', checked: true, caption: 'Test print slice' },
+
     { name: 'emmiter', type: 'group', caption: 'Emmiter' },
     { name: 'showEmmiter', type: 'checkbox', checked: true, caption: 'Show emmiter:' },
 
@@ -41,7 +44,7 @@ function getParameterDefinitions () {
       initial: 'us100' // optional, default selected value
       // if omitted, the first item is selected by default
     },
-    { name: 'usTestSlice', type: 'checkbox', checked: true, caption: 'create a slice to test print' },
+    { name: 'usTestSlice', type: 'checkbox', checked: true, caption: 'create a slice to test print' }
   ]
 }
 
