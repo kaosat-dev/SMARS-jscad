@@ -5,7 +5,9 @@ const {rotate, translate, mirror} = require('@jscad/csg/api').transformations
 // const bodyBottom = require('./bodyBottom')
 const ultrasonicSensorHolder = require('./ultrasonicHolder')
 const ultrasonicSensors = require('./ultrasonicSensors')
-const emmiter = require('./emmiter')
+const emitter = require('./emitter')
+const chassis = require('./chassis')
+const drive = require('./drive')
 
 const paramDefaults = {
   quality: 120,
@@ -13,13 +15,18 @@ const paramDefaults = {
   ultrasonicSensor: {model: 'us100'}
 }
 
+const drives = {
+  trackedWheel: {},
+  foo: {}
+}
+
 function getParameterDefinitions () {
   return [
 
     { name: 'testPrintSlice', type: 'checkbox', checked: true, caption: 'Test print slice' },
-
-    { name: 'emmiter', type: 'group', caption: 'Emmiter' },
-    { name: 'showEmmiter', type: 'checkbox', checked: true, caption: 'Show emmiter:' },
+    // emitter
+    { name: 'emitter', type: 'group', caption: 'Emitter' },
+    { name: 'showEmitter', type: 'checkbox', checked: false, caption: 'Show emitter:' },
 
     { name: 'showEmitTop', type: 'checkbox', checked: false, caption: 'Show top:' },
     { name: 'showEmitBottom', type: 'checkbox', checked: true, caption: 'Show bottom:' },
@@ -30,6 +37,25 @@ function getParameterDefinitions () {
 
     { name: 'readyToPrint', type: 'checkbox', checked: false, caption: 'Ready for 3d print' },
 
+    // chassis
+    { name: 'chassis', type: 'group', caption: 'Chassis' },
+    { name: 'showChassis', type: 'checkbox', checked: true, caption: 'Show chassis:' },
+    { name: 'chShowCoverBlock', type: 'checkbox', checked: true, caption: 'Show cover block:' },
+
+    // wheels/drive
+    { name: 'drive', type: 'group', caption: 'Drive' },
+    { name: 'showDrive', type: 'checkbox', checked: true, caption: 'Show drive:' },
+    {
+      name: 'mType',
+      type: 'choice',
+      values: Object.keys(drives), // these are the values that will be supplied to your script
+      captions: Object.keys(drives),
+      caption: 'drive type:', // optional, displayed left of the input field
+      initial: 'trackedWheel' // optional, default selected value
+      // if omitted, the first item is selected by default
+    },
+
+    // ultrasonic sensor
     { name: 'ultrasonic', type: 'group', caption: 'Ultrasonic sensor' },
     { name: 'showUltrasonic', type: 'checkbox', checked: false, caption: 'Show ultrasonic sensor holder:' },
     { name: 'usConnectorCutout', type: 'checkbox', checked: true, caption: 'cutout for connectors' },
@@ -51,10 +77,11 @@ function getParameterDefinitions () {
 function main (params) {
   params = Object.assign({}, paramDefaults, params)
   params = Object.assign({}, params, {ultrasonicSensor: ultrasonicSensors[params.usModel]})
-  console.log('params foo', params)
   let results = []
   results = params.showUltrasonic ? results.concat(ultrasonicSensorHolder(params)) : results
-  results = params.showEmmiter ? results.concat(emmiter(params)) : results
+  results = params.showEmitter ? results.concat(emitter(params)) : results
+  results = params.showChassis ? results.concat(chassis(params)) : results
+  results = params.showDrive ? results.concat(drive(params)) : results
   return results
 }
 

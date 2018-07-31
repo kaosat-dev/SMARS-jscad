@@ -129,7 +129,7 @@ const joypad_dimensions = {
   ]
 }
 
-module.exports = function emitter (params) {
+const emitter = (params) => {
   const {D1_trippler_base, D1_oled_shield} = dimensions
   const joyPad = joypad_dimensions
 
@@ -404,7 +404,6 @@ module.exports = function emitter (params) {
       tripplerMountHolePos[5] - usbXoffset * 0.5,
       width / 2,
       10 + ubsCutSize[1] / 2
-      // sidesHeight / 2
     ]
     // .map(holeData
     const usbCutShape = roundedRectangle({size: ubsCutSize, radius: 1})
@@ -553,3 +552,5 @@ module.exports = function emitter (params) {
   }
   return flatten(results)
 }
+
+module.exports = emitter
