@@ -325,13 +325,44 @@ module.exports = function emitter (params) {
 
   let results = []
   if (params.showEmitTop) {
+    const topRecessDepth = 2
+    let cover = linear_extrude({height: platesThickness - topRecessDepth}, boxShapeTop)
+
+    // recess for more electronics space
+    let recessShape = difference(
+      boxShape,
+      contract(wallsThickness * 1, 1, boxShape)
+    )
+    /* cover = difference(
+      cover,
+      translate([0, 0, 0], linear_extrude({height: topRecessDepth}, recessShape))
+    ) */
+
+    // hole reinforcements just in case
+    const holeReinforcements = boxMountHolesData.map(holeData => {
+      return translate(holeData.position,
+        circle({r: (holeData.diameter + wallsThickness + cutsClearance) / 2, center: true})
+      )
+    })
+    recessShape = intersection(
+      union(
+        recessShape,
+        holeReinforcements
+      ),
+      boxShape
+    )
+    recessShape = difference(recessShape, boxShapeTopHoles)
+    cover = union(cover,
+      translate([0, 0, -topRecessDepth], linear_extrude({height: topRecessDepth}, recessShape))
+
+    )
+    // cover = cover.union(holeReinforcements.map(x => linear_extrude({height: platesThickness}, x)))
+    // cover
     results = results.concat(
       // 2d outline
       !params.readyToPrint ? boxShapeTop : [],
       // top
-      translate([0, 0, sidesHeight],
-        linear_extrude({height: platesThickness}, boxShapeTop)
-      )
+      translate([0, 0, sidesHeight], cover)
     )
   }
   if (params.showEmitBottom) {
@@ -366,15 +397,17 @@ module.exports = function emitter (params) {
 
     let sidesMain = color('gray', linear_extrude({height: sidesHeight}, boxShapeSides))
     const tripplerMountHolePos = D1_trippler_base.mountHoles.map(data => data.position[0] + holesOffset[0] + tripplerCenter[0])
+    
+    const ubsCutSize = [11, 6]
     const usbXoffset = tripplerMountHolePos[5] - tripplerMountHolePos[4]
     const usbPosition = [// 45
       tripplerMountHolePos[5] - usbXoffset * 0.5,
       width / 2,
-      15.5
+      10 + ubsCutSize[1] / 2
       // sidesHeight / 2
     ]
     // .map(holeData
-    const usbCutShape = roundedRectangle({size: [11, 6], radius: 1})
+    const usbCutShape = roundedRectangle({size: ubsCutSize, radius: 1})
     const ubsCut = translate(
       usbPosition,
       rotate([90, 0, 0], linear_extrude({height: 10}, usbCutShape))
