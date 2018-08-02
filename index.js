@@ -16,6 +16,9 @@ const paramDefaults = {
 }
 
 const drives = {
+  wheels:{
+    amount: 4
+  },
   trackedWheel: {},
   foo: {}
 }
@@ -76,7 +79,10 @@ function getParameterDefinitions () {
 
 function main (params) {
   params = Object.assign({}, paramDefaults, params)
-  params = Object.assign({}, params, {ultrasonicSensor: ultrasonicSensors[params.usModel]})
+  params = Object.assign({}, params, {
+    ultrasonicSensor: ultrasonicSensors[params.usModel],
+    drives
+  })
   let results = []
   results = params.showUltrasonic ? results.concat(ultrasonicSensorHolder(params)) : results
   results = params.showEmitter ? results.concat(emitter(params)) : results
