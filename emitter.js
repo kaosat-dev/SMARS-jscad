@@ -88,7 +88,7 @@ const battery_dimensions = {
 
 const battery = () => {
   const dims = battery_dimensions.AA
-  console.log('foo', dims.size)
+  // console.log('foo', dims.size)
   return union(
     cylinder({d: dims.size[1], h: dims.size[0]}),
     translate([0, 0, dims.size[0]], cylinder({d: dims.plus[1], h: dims.plus[0]}))
@@ -206,7 +206,6 @@ const emitter = (params) => {
     round: true
     // r: 4
   })
-
   // data for the assembly holes
   const boxMountHoleDia = 3
   const boxMountHoleSideOffset = 1
@@ -289,7 +288,7 @@ const emitter = (params) => {
     // correctly placed joypad hole
     translate(joyCenter, circle({r: joyPad.joystick.diameter / 2 + cutsClearance, center: true})),
     // correctly place oled screen hole
-    translate(oledCenter, square({size: D1_oled_shield.screen.size.map(x => x += cutsClearance), center: true}))
+    translate(oledCenter, square({size: D1_oled_shield.screen.size.map(x => x + cutsClearance), center: true}))
   ])
 
   // bottom
@@ -311,6 +310,7 @@ const emitter = (params) => {
       )
     })
   )
+
   // remove holes for mounts, they are pass-through
   boxShapeSides = difference(
     boxShapeSides,
@@ -397,7 +397,7 @@ const emitter = (params) => {
 
     let sidesMain = color('gray', linear_extrude({height: sidesHeight}, boxShapeSides))
     const tripplerMountHolePos = D1_trippler_base.mountHoles.map(data => data.position[0] + holesOffset[0] + tripplerCenter[0])
-    
+
     const ubsCutSize = [11, 6]
     const usbXoffset = tripplerMountHolePos[5] - tripplerMountHolePos[4]
     const usbPosition = [// 45

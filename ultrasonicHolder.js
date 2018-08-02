@@ -8,10 +8,6 @@ const {union, difference, intersection} = require('@jscad/csg/api').booleanOps
 
 const rectangle = require('./lib/roundedRect')
 
-const fs = require('fs')
-const bar = fs.readFileSync('SMARS-jscad/foo.txt')
-console.log('here', bar)
-
 module.exports = function ultrasonicSensorHolder (params) {
   const topBottomWallsThickness = 4
   const sideWallsThickness = [5, 3]

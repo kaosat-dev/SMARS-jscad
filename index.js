@@ -1,13 +1,15 @@
 const {rotate, translate, mirror} = require('@jscad/csg/api').transformations
 
-// const servo = require('./servo')
-// const bodyTop = require('./bodyTop')
-// const bodyBottom = require('./bodyBottom')
 const ultrasonicSensorHolder = require('./ultrasonicHolder')
 const ultrasonicSensors = require('./ultrasonicSensors')
 const emitter = require('./emitter')
 const chassis = require('./chassis')
 const drive = require('./drive')
+
+// these now work in the browser too !
+const fs = require('fs')
+const bar = fs.readFileSync('SMARS-jscad/foo.txt')
+console.log('here', bar)
 
 const paramDefaults = {
   quality: 120,
@@ -26,7 +28,7 @@ const drives = {
 function getParameterDefinitions () {
   return [
 
-    { name: 'testPrintSlice', type: 'checkbox', checked: true, caption: 'Test print slice' },
+    { name: 'testPrintSlice', type: 'checkbox', checked: false, caption: 'Test print slice' },
     // emitter
     { name: 'emitter', type: 'group', caption: 'Emitter' },
     { name: 'showEmitter', type: 'checkbox', checked: false, caption: 'Show emitter:' },
@@ -47,7 +49,7 @@ function getParameterDefinitions () {
 
     // wheels/drive
     { name: 'drive', type: 'group', caption: 'Drive' },
-    { name: 'showDrive', type: 'checkbox', checked: true, caption: 'Show drive:' },
+    { name: 'showDrive', type: 'checkbox', checked: false, caption: 'Show drive:' },
     {
       name: 'mType',
       type: 'choice',

@@ -111,7 +111,6 @@ const chassis = (params) => {
     body,
     color('black', backCutBody)
   )
-
   const pcbCutOffset = [-innerBodySize[0] / 2, pcbCut.position[1], size[2] - pcbCut.position[2] - pcbCut.thickness + 0.5]
 
   const pcbCutOutline = union(
@@ -155,6 +154,7 @@ const chassis = (params) => {
     sideCutShape,
     mirror([0, 1, 0], sideCutShape)
   )
+  
 
   // motor
   const motorMountsData = chassisData.motorMounts

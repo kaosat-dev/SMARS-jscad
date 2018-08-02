@@ -182,8 +182,9 @@ const drive = (params) => {
     .map( _ => {
       return selectedDrive(params)
     }) */
-  return track()
+  // return track()
   const baseWheel = translate([25, -30, 5], rotate([90, 0, 0], selectedDrive(params)))
+  return baseWheel
   const wheel1 = baseWheel
   const wheel2 = mirror([1, 0, 0], wheel1)
 
