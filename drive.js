@@ -63,7 +63,7 @@ const trackedWheel = (params) => {
     translate([0, 0, thickess - spikes.height], cylinder({h: spikes.height, d2: diameter, d1: diameter - 2})),
     ...spikeShapes
   )
-
+  
   // add axle rim
   const axleRim = cylinder({d: axle.rimDiameter, center: [true, true, false], h: axle.rimHeight})
   wheel = union(
@@ -87,6 +87,7 @@ const trackedWheel = (params) => {
       const modShape = translate([0, diameter / 2 - 5, thickess / 2 + 5], spokeShape)
       return rotate([0, 0, unitRotation], modShape)
     })
+
 
   // remove stuff sticking out
   spokeShapes = intersection(
@@ -182,9 +183,8 @@ const drive = (params) => {
     .map( _ => {
       return selectedDrive(params)
     }) */
-  // return track()
+  //return track()
   const baseWheel = translate([25, -30, 5], rotate([90, 0, 0], selectedDrive(params)))
-  return baseWheel
   const wheel1 = baseWheel
   const wheel2 = mirror([1, 0, 0], wheel1)
 

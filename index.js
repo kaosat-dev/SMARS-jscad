@@ -1,4 +1,5 @@
 const {rotate, translate, mirror} = require('@jscad/csg/api').transformations
+const {color} = require('@jscad/csg/api').color
 
 const ultrasonicSensorHolder = require('./ultrasonicHolder')
 const ultrasonicSensors = require('./ultrasonicSensors')
@@ -9,16 +10,21 @@ const drive = require('./drive')
 // these now work in the browser too !
 const fs = require('fs')
 const bar = fs.readFileSync('SMARS-jscad/foo.txt')
-console.log('here', bar)
-
+console.log('read from file', bar)
 const paramDefaults = {
   quality: 120,
   robotName: 'SMARS',
   ultrasonicSensor: {model: 'us100'}
 }
 
+const availables = {
+  chassis: {
+    'smars-standard': 42
+  }
+}
+
 const drives = {
-  wheels:{
+  wheels: {
     amount: 4
   },
   trackedWheel: {},
@@ -27,7 +33,11 @@ const drives = {
 
 function getParameterDefinitions () {
   return [
-
+    { 
+      name: 'chassisDims', type: 'choice', caption: 'chassis type',
+      values: Object.keys(availables.chassis), // these are the values that will be supplied to your script
+      captions: Object.keys(availables.chassis),
+    },
     { name: 'testPrintSlice', type: 'checkbox', checked: false, caption: 'Test print slice' },
     // emitter
     { name: 'emitter', type: 'group', caption: 'Emitter' },
@@ -45,7 +55,10 @@ function getParameterDefinitions () {
     // chassis
     { name: 'chassis', type: 'group', caption: 'Chassis' },
     { name: 'showChassis', type: 'checkbox', checked: true, caption: 'Show chassis:' },
+    { name: 'chShowMotorBlock', type: 'checkbox', checked: true, caption: 'Show motor block:' },
     { name: 'chShowCoverBlock', type: 'checkbox', checked: true, caption: 'Show cover block:' },
+    { name: 'chShowMotors', type: 'checkbox', checked: true, caption: 'Show motors:' },
+    { name: 'chSeeThrough', type: 'checkbox', checked: true, caption: 'See through:' },
 
     // wheels/drive
     { name: 'drive', type: 'group', caption: 'Drive' },
@@ -86,7 +99,10 @@ function main (params) {
     drives
   })
   let results = []
-  results = params.showUltrasonic ? results.concat(ultrasonicSensorHolder(params)) : results
+  results = params.showUltrasonic ? results.concat(
+    translate([65, 0, 40], rotate([90, 0, -90], color('orange', ultrasonicSensorHolder(params))))
+
+  ) : results
   results = params.showEmitter ? results.concat(emitter(params)) : results
   results = params.showChassis ? results.concat(chassis(params)) : results
   results = params.showDrive ? results.concat(drive(params)) : results

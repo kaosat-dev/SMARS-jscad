@@ -14,124 +14,21 @@ const extractCenterPosition = require('./utils/extractCenterPosition')
 
 const roundedRectangle = require('./lib/roundedRect')
 
-const dimensions = {
-  D1_mini: {
-    board: {size: [34.2, 25.6, 1]}
-  },
-  D1_trippler_base: {
-    board: {size: [79, 34.3, 1]},
-    mountHoles: [
-      {
-        diameter: 3.1,
-        position: [3, 3]
-      },
-      {
-        diameter: 3.1,
-        position: [3 + 19.7, 3]
-      },
-      {
-        diameter: 3.1,
-        position: [3 + 19.7 + 7.1, 3]
-      },
-      {
-        diameter: 3.1,
-        position: [3 + 19.7 + 7.1 + 19.7, 3]
-      },
-      {
-        diameter: 3.1,
-        position: [3 + 19.7 + 7.1 + 19.7 + 7.1, 3]
-      },
-      {
-        diameter: 3.1,
-        position: [3 + 19.7 + 7.1 + 19.7 + 7.1 + 19.7, 3]
-      },
-      // second row
-      {
-        diameter: 3.1,
-        position: [3, 3 + 28]
-      },
-      {
-        diameter: 3.1,
-        position: [3 + 19.7, 3 + 28]
-      },
-      {
-        diameter: 3.1,
-        position: [3 + 19.7 + 7.1, 3 + 28]
-      },
-      {
-        diameter: 3.1,
-        position: [3 + 19.7 + 7.1 + 19.7, 3 + 28]
-      },
-      {
-        diameter: 3.1,
-        position: [3 + 19.7 + 7.1 + 19.7 + 7.1, 3 + 28]
-      },
-      {
-        diameter: 3.1,
-        position: [3 + 19.7 + 7.1 + 19.7 + 7.1 + 19.7, 3 + 28]
-      }
+const {dimentions} = require('./data')
+const batteriesData = dimentions.batteries
+const electronics = dimentions.electronics
 
-    ]
-  },
-  D1_oled_shield: {
-    board: {size: [33, 25.6, 1]},
-    screen: {size: [18, 13, 2]}
-  }
-}
-
-const battery_dimensions = {
-  AA: {
-    size: [50.5, 14.5], // length, diameter
-    plus: [1, 5.5] // plus pole
-  }
-}
-
-const battery = () => {
-  const dims = battery_dimensions.AA
-  // console.log('foo', dims.size)
-  return union(
-    cylinder({d: dims.size[1], h: dims.size[0]}),
-    translate([0, 0, dims.size[0]], cylinder({d: dims.plus[1], h: dims.plus[0]}))
-  )
-}
+const battery = require('./battery')
 
 const batteryHolderCut = (params) => {
-  const size = battery_dimensions.AA
+  const size = batteriesData.AA
   return union(
     cube({size: [...size, size[1]]})
   )
 }
 
-const joypad_dimensions = {
-  board: {
-    size: [38.1, 38.1, 1]
-  },
-  joystick: {
-    diameter: 26
-  },
-  mountHoles: [
-    {
-      diameter: 3,
-      position: [3.5, 3.5]
-    },
-    {
-      diameter: 3,
-      position: [3.5 + 31, 3.5]
-    },
-    {
-      diameter: 3,
-      position: [3.5 + 31, 3.5 + 31]
-    },
-    {
-      diameter: 3,
-      position: [3.5, 3.5 + 31]
-    }
-  ]
-}
-
 const emitter = (params) => {
-  const {D1_trippler_base, D1_oled_shield} = dimensions
-  const joyPad = joypad_dimensions
+  const {D1_trippler_base, D1_oled_shield, joyPad} = electronics
 
   // trippler base
   const holesOffset = [-D1_trippler_base.board.size[0] / 2, -D1_trippler_base.board.size[1] / 2]
@@ -199,8 +96,8 @@ const emitter = (params) => {
   // battery holder outline
   const batteryHolderShape = square({
     size: [
-      battery_dimensions.AA.size[0] + wallsThickness + 7,
-      battery_dimensions.AA.size[1] + wallsThickness + 3
+      batteriesData.AA.size[0] + wallsThickness + 7,
+      batteriesData.AA.size[1] + wallsThickness + 3
     ],
     center: true,
     round: true
@@ -452,7 +349,7 @@ const emitter = (params) => {
   // battery holder
   if (params.showEmitBattery) {
     results = results.concat(
-      translate([-battery_dimensions.AA.size[0] / 2, -13, -8],
+      translate([-batteriesData.AA.size[0] / 2, -13, -8],
         rotate([0, 90, 0], battery())
       )
     )
