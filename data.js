@@ -128,23 +128,24 @@ const chassis = {
     position: [0, 0, 2]// from top
   },
   sideCuts: [
-  ],
-  motors: [
-    {size: [20, 12]},
-    {size: [20, 12]}
-  ],
-  motorMounts: [
-    {
-      notch: {size: [19, 2, 2]},
-      blocker: {size: [4, 2, 2], position: [20, 0, 0]}
-    }
   ]
+}
+
+const motors = {
+   // pololu geared motor
+  miniGearMotor: {
+    size: [12, 9 + 15, 10],
+    axle: {diameter: 2.5, length: 10},
+    // meh
+    backOffset: [0, 24 / 2, 10 / 2]
+  }
 }
 
 const dimentions = {
   batteries,
   electronics,
-  chassis
+  chassis,
+  motors
 }
 
 module.exports = {dimentions}

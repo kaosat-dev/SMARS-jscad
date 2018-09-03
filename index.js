@@ -4,7 +4,7 @@ const {color} = require('@jscad/csg/api').color
 const ultrasonicSensorHolder = require('./ultrasonicHolder')
 const ultrasonicSensors = require('./ultrasonicSensors')
 const emitter = require('./emitter')
-const chassis = require('./chassis')
+const chassis = require('./chassis/base')
 const drive = require('./drive')
 
 // these now work in the browser too !
@@ -31,12 +31,28 @@ const drives = {
   foo: {}
 }
 
+// base on motors TYPE
+// => change motor/drive mounts
+
+// combine motor type, motor counts/ positions/oritentations
+
 function getParameterDefinitions () {
   return [
-    { 
-      name: 'chassisDims', type: 'choice', caption: 'chassis type',
+    {
+      name: 'chassisDims',
+      type: 'choice',
+      caption: 'chassis type',
       values: Object.keys(availables.chassis), // these are the values that will be supplied to your script
       captions: Object.keys(availables.chassis),
+      initial: 'smars-standard'
+    },
+    {
+      name: 'motorisation',
+      type: 'choice',
+      caption: 'motors type',
+      values: ['miniGearMotor', 'servoContinuous'],
+      captions: ['mini gear motor', 'servo (continuous)'],
+      initial: 'miniGearMotor'
     },
     { name: 'testPrintSlice', type: 'checkbox', checked: false, caption: 'Test print slice' },
     // emitter
@@ -58,6 +74,7 @@ function getParameterDefinitions () {
     { name: 'chShowMotorBlock', type: 'checkbox', checked: true, caption: 'Show motor block:' },
     { name: 'chShowCoverBlock', type: 'checkbox', checked: true, caption: 'Show cover block:' },
     { name: 'chShowMotors', type: 'checkbox', checked: true, caption: 'Show motors:' },
+    { name: 'chShowBatteries', type: 'checkbox', checked: true, caption: 'Show batteries:' },
     { name: 'chSeeThrough', type: 'checkbox', checked: true, caption: 'See through:' },
 
     // wheels/drive
