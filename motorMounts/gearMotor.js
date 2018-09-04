@@ -15,12 +15,16 @@ const motorMountGearMotor = (motorData, axles, innerBodySize, wallsThickness) =>
   const motorMounts = motorMountsData
   .map(motorMountData => {
     const motorWidth = motorData.size[1]
+    const motorHeight = motorData.size[2]
 
     const blockerWidth = 4
     const blockerHeight = 2
     const blockerThickness = 8
     const centralSpacing = 6
-    const sidePlatesHeight = 6
+
+    const sidePlatesWidth = 2
+    const sidePlatesLength = innerBodySize[1] / 2 - centralSpacing / 2
+    const sidePlatesHeight = motorHeight
 
     const cutDepth = 1
 
@@ -50,18 +54,20 @@ const motorMountGearMotor = (motorData, axles, innerBodySize, wallsThickness) =>
 
     const motorSidePlate = translate([-halfOffset, centralSpacing / 2, 0],
       union(
-        cube({size: [2, innerBodySize[1] / 2 - centralSpacing / 2, sidePlatesHeight]}),
+        cube({size: [sidePlatesWidth, sidePlatesLength, sidePlatesHeight]}),
         // back block
-        translate([0, 10, 0], cube({size: [4, 6, sidePlatesHeight]}))
+        translate([-sidePlatesWidth, 10, 0], cube({size: [4, 6, sidePlatesHeight]}))
       )
     )
     const additions = [
-      translate([0, -motorData.size[1] / 2 - blockerWidth/2, -motorData.size[2] / 2], motorBlockerShape),
-      translate([0, -motorData.size[1] / 2 - 3, -motorData.size[2] / 2], motorSidePlate)
+      union(
+        translate([0, -motorData.size[1] / 2 - blockerWidth / 2, -motorData.size[2] / 2], motorBlockerShape),
+        translate([0, -motorData.size[1] / 2 - 3, -motorData.size[2] / 2], motorSidePlate)
+      )
     ]
     const removals = [
-      motorNotch,
-      motorCutout
+      union(motorNotch,
+      motorCutout)
     ]
 
     return {

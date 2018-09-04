@@ -12,8 +12,16 @@ const distribute = require('../utils/distribute')
 const center = require('../utils/center')
 const extractCenterPosition = require('../utils/extractCenterPosition')
 // const {enlarge} = require('./lib/scaleAbs')
-
 const roundedRectangle = require('../lib/roundedRect')
+
+const myMirror = (vector, shape) => {
+  let result = shape
+  result = vector[0] !== 0 ? mirror([vector[0], 0, 0], result) : result
+  result = vector[1] !== 0 ? mirror([0, vector[1], 0], result) : result
+  result = vector[2] !== 0 ? mirror([0, 0, vector[2]], result) : result
+  return result
+  //return /*mirror([0, 0, vector[2]], */mirror([0, vector[1], 0], mirror([vector[0], 0, 0], shape))
+}
 
 const dimensions = require('../data').dimentions
 const chassisData = dimensions.chassis
@@ -26,9 +34,9 @@ const chassis = (params) => {
   // const motorSize = motorData.size
   const motorPlacements = [
     { position: [27, 15, 7], orientation: undefined }, // [0, 0, 0] breaks mirror :()
-    { position: [-27, 15, 7], orientation: undefined }, // [0, 0, 0] breaks mirror :()
+    // { position: [-27, 15, 7], orientation: undefined }, // [0, 0, 0] breaks mirror :()
     { position: [27, -15, 7], orientation: [0, 1, 0] },
-    { position: [-27, -15, 7], orientation: [0, 1, 0] }
+    { position: [-27, -15, 7], orientation: [1, 1, 0] }
   ]
 
   const innerBodySize = [
@@ -44,11 +52,11 @@ const chassis = (params) => {
   const motorMounts = motorPlacements.map(placement => {
     console.log('placement', placement, motorMount)
     const additions = placement.orientation
-      ? motorMount.additions.map(addition => translate(placement.position, mirror(placement.orientation, addition)))
+      ? motorMount.additions.map(addition => translate(placement.position, myMirror(placement.orientation, addition)))
       : motorMount.additions.map(addition => translate(placement.position, addition))
 
     const removals = placement.orientation
-    ? motorMount.removals.map(removal => translate(placement.position, mirror(placement.orientation, removal)))
+    ? motorMount.removals.map(removal => translate(placement.position, myMirror(placement.orientation, removal)))
     : motorMount.removals.map(removal => translate(placement.position, removal))
 
     return {additions, removals}
@@ -184,7 +192,7 @@ const chassis = (params) => {
     const motor = require('../motors/gearMotor')()
     const motors = motorPlacements.map(placement => {
       return placement.orientation
-        ? translate(placement.position, mirror(placement.orientation, motor))
+        ? translate(placement.position, myMirror(placement.orientation, motor))
         : translate(placement.position, motor)
     })
     results = results.concat(motors)
