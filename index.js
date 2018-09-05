@@ -3,7 +3,7 @@ const {color} = require('@jscad/csg/api').color
 
 const ultrasonicSensorHolder = require('./ultrasonicHolder')
 const ultrasonicSensors = require('./ultrasonicSensors')
-const emitter = require('./emitter')
+const emitter = require('./emitter/index')
 const chassis = require('./chassis/base')
 const drive = require('./drive')
 

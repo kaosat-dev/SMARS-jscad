@@ -6,19 +6,19 @@ const {linear_extrude} = require('@jscad/csg/api').extrusions
 const {rotate, translate, scale, mirror, contract, expand} = require('@jscad/csg/api').transformations
 const {union, difference, intersection} = require('@jscad/csg/api').booleanOps
 
-const {flatten} = require('./arrays')
-const align = require('./utils/align')
-const distribute = require('./utils/distribute')
-const center = require('./utils/center')
-const extractCenterPosition = require('./utils/extractCenterPosition')
+const {flatten} = require('../arrays')
+const align = require('../utils/align')
+const distribute = require('../utils/distribute')
+const center = require('../utils/center')
+const extractCenterPosition = require('../utils/extractCenterPosition')
 
-const roundedRectangle = require('./lib/roundedRect')
+const roundedRectangle = require('../lib/roundedRect')
 
-const {dimentions} = require('./data')
+const {dimentions} = require('../data')
 const batteriesData = dimentions.batteries
 const electronics = dimentions.electronics
 
-const battery = require('./battery')
+const battery = require('../battery')
 
 const batteryHolderCut = (params) => {
   const size = batteriesData.AA

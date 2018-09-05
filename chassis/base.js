@@ -20,7 +20,6 @@ const myMirror = (vector, shape) => {
   result = vector[1] !== 0 ? mirror([0, vector[1], 0], result) : result
   result = vector[2] !== 0 ? mirror([0, 0, vector[2]], result) : result
   return result
-  //return /*mirror([0, 0, vector[2]], */mirror([0, vector[1], 0], mirror([vector[0], 0, 0], shape))
 }
 
 const dimensions = require('../data').dimentions
@@ -28,15 +27,18 @@ const chassisData = dimensions.chassis
 
 const chassis = (params) => {
   console.log('params', params)
+
+  const motorAxleClearance = 2
   const motorData = dimensions.motors[params.motorisation]
   const {size, axles, wallsThickness, pcbCut} = chassisData
 
   // const motorSize = motorData.size
+  const motorZOffset = motorData.size[2] / 2 + wallsThickness[2]
   const motorPlacements = [
-    { position: [27, 15, 7], orientation: undefined }, // [0, 0, 0] breaks mirror :()
-    // { position: [-27, 15, 7], orientation: undefined }, // [0, 0, 0] breaks mirror :()
-    { position: [27, -15, 7], orientation: [0, 1, 0] },
-    { position: [-27, -15, 7], orientation: [1, 1, 0] }
+    { position: [27, 15, motorZOffset], orientation: undefined }, // [0, 0, 0] breaks mirror :()
+    { position: [-27, 15, motorZOffset], orientation: [1, 0, 0] }, // [0, 0, 0] breaks mirror :()
+    { position: [27, -15, motorZOffset], orientation: [0, 1, 0] },
+    { position: [-27, -15, motorZOffset], orientation: [1, 1, 0] }
   ]
 
   const innerBodySize = [
@@ -64,10 +66,12 @@ const chassis = (params) => {
 
   console.log('motorMounts', motorMounts)
 
-  const axleHoles = axles.map(axle => {
+  const axleHoles = motorPlacements.map((placement, index) => {
+    console.log('axles', axles, index)
+    const axle = motorData.axle
     // from the borders !!
-    return translate(axle.position,
-      rotate([90, 0, 0], cylinder({d: axle.diameter, center: [true, true, true], h: size[1] * 10, fn: 32}))
+    return translate(placement.position,
+      rotate([90, 0, 0], cylinder({d: axle.diameter + motorAxleClearance, center: [true, true, true], h: size[1] * 10, fn: 32}))
     )
   })
 
@@ -162,8 +166,47 @@ const chassis = (params) => {
   body = difference(body, ...motorMounts.map(x => x.removals))
 
   // battery cutout
-  const batteryCutout = translate([0, 0, 2], cube({size: [30, 55, 50], center: [true, true, false]}))
+  const batteryHolderDia = 7
+  const batteryHolderHeight = 6.5
+  const batterHolderWidth = 12
+  const batterHolderRoundOffset = 0.5
+  const batterySpacing = 5
+  const batteriesCount = 2
+  const batteryDia = 14
+  const batteryConnectorHolderThickness = 1
+  const batteryConnectorThickness = 1
+  const batteryMountWidthDiff = innerBodySize[1] + (batteryConnectorHolderThickness + batteryConnectorThickness) * 2
+
+  const batteryCutout = translate([0, 0, 2], cube({size: [30, batteryMountWidthDiff, 50], center: [true, true, false]}))
   body = difference(body, batteryCutout)
+
+  const batterConnectorCutoutShape = hull(
+    translate([0, batteryHolderDia / 2 + batterHolderRoundOffset], circle({r: batteryHolderDia / 2, center: true})),
+    translate([0, batteryHolderDia + batterHolderRoundOffset], square({size: [batteryHolderDia, batteryHolderDia], center: true}))
+  )
+  const batterConnectorHolderShape = translate([0, batteryHolderDia / 2], square({size: [batterHolderWidth, batteryHolderHeight], center: true}))
+
+  const batterHolderShape = difference(
+    hull(
+      Array(batteriesCount).fill(0).map((_, index) => translate([index * (batteryDia + batterySpacing), 0], batterConnectorHolderShape))
+    ),
+    union(
+      Array(batteriesCount).fill(0).map((_, index) => translate([index * (batteryDia + batterySpacing), 0], batterConnectorCutoutShape))
+    )
+  )
+  console.log('innerBodySize', innerBodySize)
+  const batterHolder = color('red', linear_extrude({height: batteryConnectorHolderThickness}, batterHolderShape))
+  body = union(body,
+    translate([-10, -innerBodySize[1] / 2, 3], rotate([90, 0, 0], batterHolder)),
+    translate([-10, innerBodySize[1] / 2, 3], mirror([0, 1, 0], rotate([90, 0, 0], batterHolder)))
+  )
+
+  if (params.testPrintSlice) {
+    body = intersection(
+      body,
+      cube({size: [70, 70, 15], center: [true, true, false]})
+    )
+  }
 
   const motorBlockColor = params.chSeeThrough ? [0.5, 0.5, 0.5, 0.5] : [0.5, 0.5, 0.5]
 
@@ -178,10 +221,10 @@ const chassis = (params) => {
   if (params.chShowBatteries) {
     const batteryShape = require('../battery')
     const batteries = [
-      translate([8, -26, 10],
+      translate([8, -25.5, 10],
         rotate([0, 90, 90], batteryShape())
       ),
-      translate([-8, -26, 10],
+      translate([-8, -25.5, 10],
         rotate([0, 90, 90], batteryShape())
       )
     ]

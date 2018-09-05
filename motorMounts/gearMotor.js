@@ -14,7 +14,8 @@ const motorMountGearMotor = (motorData, axles, innerBodySize, wallsThickness) =>
   ]
   const motorMounts = motorMountsData
   .map(motorMountData => {
-    const motorWidth = motorData.size[1]
+    const motorWidth = motorData.size[0]
+    const motorLength = motorData.size[1]
     const motorHeight = motorData.size[2]
 
     const blockerWidth = 4
@@ -26,6 +27,8 @@ const motorMountGearMotor = (motorData, axles, innerBodySize, wallsThickness) =>
     const sidePlatesLength = innerBodySize[1] / 2 - centralSpacing / 2
     const sidePlatesHeight = motorHeight
 
+    const motorNotchLength = motorWidth + 5
+
     const cutDepth = 1
 
     const halfOffset = innerBodySize[0] / 2 - motorWidth
@@ -34,11 +37,11 @@ const motorMountGearMotor = (motorData, axles, innerBodySize, wallsThickness) =>
       translate([0, 0], square({size: [0.1, 0.1]})),
       translate([0, cutDepth], square({size: [0.1, 0.1]}))
     )
-    const motorNotch = translate([-halfOffset - motorWidth, innerBodySize[1] / 2, wallsThickness[2] + sidePlatesHeight],
-      rotate([0, 90, 0], linear_extrude({height: motorWidth + 5}, motorNotchOutline))
+    const motorNotch = translate([-motorNotchLength + motorWidth / 2, motorLength / 2 - cutDepth, motorHeight / 2],
+      rotate([0, 90, 0], linear_extrude({height: motorNotchLength}, motorNotchOutline))
     )
-    const motorCutout = translate([-halfOffset - motorWidth, innerBodySize[1] / 2, wallsThickness[2]],
-      cube({size: [motorWidth, cutDepth, sidePlatesHeight]})
+    const motorCutout = translate([0, motorLength / 2 - cutDepth / 2, 0],
+      cube({size: [motorWidth, cutDepth, motorHeight], center: [true, true, true]})
     )
 
     const motorBlockerOutline = hull(
@@ -48,21 +51,26 @@ const motorMountGearMotor = (motorData, axles, innerBodySize, wallsThickness) =>
       translate([blockerWidth / 2 - 1.5, blockerHeight], square({size: [0.1, 0.1]}))
     )
 
-    const motorBlockerShape = translate([0 + blockerThickness / 2, blockerWidth / 2, 0],
-      rotate([90, 0, -90], linear_extrude({height: blockerThickness}, motorBlockerOutline))
+    const motorBlockerShape = translate([0 - blockerThickness / 2, blockerWidth / 2, 0],
+      rotate([90, 0, 90], linear_extrude({height: blockerThickness}, motorBlockerOutline))
     )
 
-    const motorSidePlate = translate([-halfOffset, centralSpacing / 2, 0],
+    const motorSidePlate = translate([-sidePlatesWidth-motorWidth/2, centralSpacing / 2, 0], // [-halfOffset, centralSpacing / 2, 0],
       union(
         cube({size: [sidePlatesWidth, sidePlatesLength, sidePlatesHeight]}),
         // back block
         translate([-sidePlatesWidth, 10, 0], cube({size: [4, 6, sidePlatesHeight]}))
       )
     )
+
     const additions = [
       union(
-        translate([0, -motorData.size[1] / 2 - blockerWidth / 2, -motorData.size[2] / 2], motorBlockerShape),
-        translate([0, -motorData.size[1] / 2 - 3, -motorData.size[2] / 2], motorSidePlate)
+        translate([0, -motorData.size[1] / 2 - blockerWidth / 2 - 2, -motorData.size[2] / 2], motorBlockerShape),
+        translate(
+          [0, -motorData.size[1] / 2 - wallsThickness[1], -motorData.size[2] / 2],
+          // [sidePlatesWidth / 2, -motorData.size[1] / 2 - wallsThickness[1], -motorData.size[2] / 2],
+          motorSidePlate
+        )
       )
     ]
     const removals = [
@@ -71,8 +79,8 @@ const motorMountGearMotor = (motorData, axles, innerBodySize, wallsThickness) =>
     ]
 
     return {
-      additions,
-      removals
+      additions: [additions],
+      removals: [removals]
     }
   })
 
