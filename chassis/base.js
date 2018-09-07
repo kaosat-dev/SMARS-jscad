@@ -231,7 +231,7 @@ const chassis = (params) => {
   )
 
   if (params.testPrintSlice) {
-    /*body = intersection(
+    /* body = intersection(
       body,
       cube({size: [70, 70, 16], center: [true, true, false]})
     ) */
@@ -274,6 +274,16 @@ const chassis = (params) => {
     results = results.concat(motors)
   }
 
+  const electronics = translate([0, 0, 20],
+    cube({size: [70, 40, 1.6], center: [true, true, false]})
+  )
+  results = results.concat(
+    // electronics
+  )
+
+  results = results.concat(
+    require('../smars-connectors/holder')()
+  )
 
   return results
 }
