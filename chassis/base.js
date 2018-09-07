@@ -32,18 +32,19 @@ const chassis = (params) => {
   const motorData = dimensions.motors[params.motorisation]
   const {size, axles, wallsThickness, pcbCut} = chassisData
 
-  // const motorSize = motorData.size
-  const motorZOffset = motorData.size[2] / 2 + wallsThickness[2]
-  const motorPlacements = [
-    { position: [27, 15, motorZOffset], orientation: undefined }, // [0, 0, 0] breaks mirror :()
-    { position: [-27, 15, motorZOffset], orientation: [1, 0, 0] }, // [0, 0, 0] breaks mirror :()
-    { position: [27, -15, motorZOffset], orientation: [0, 1, 0] },
-    { position: [-27, -15, motorZOffset], orientation: [1, 1, 0] }
-  ]
-
   const innerBodySize = [
     ...size.slice(0, -1).map((x, idx) => x - wallsThickness[idx] * 2),
     size[2] - wallsThickness[2]
+  ]
+
+  // const motorSize = motorData.size
+  const motorZOffset = motorData.size[2] / 2 + wallsThickness[2]
+  const motorYPos = motorData.size[1] / 2 + innerBodySize[1] / 2 - motorData.size[1]
+  const motorPlacements = [
+    { position: [27, motorYPos, motorZOffset], orientation: undefined }, // [0, 0, 0] breaks mirror :()
+    { position: [-27, motorYPos, motorZOffset], orientation: [1, 0, 0] }, // [0, 0, 0] breaks mirror :()
+    { position: [27, -motorYPos, motorZOffset], orientation: [0, 1, 0] },
+    { position: [-27, -motorYPos, motorZOffset], orientation: [1, 1, 0] }
   ]
 
   const availableMotorMounts = {
@@ -165,46 +166,78 @@ const chassis = (params) => {
   body = union(body, ...motorMounts.map(x => x.additions))
   body = difference(body, ...motorMounts.map(x => x.removals))
 
-  // battery cutout
-  const batteryHolderDia = 7
+  // battery holder system (cutouts & co)
   const batteryHolderHeight = 6.5
-  const batterHolderWidth = 12
   const batterHolderRoundOffset = 0.5
-  const batterySpacing = 5
+  const batterySpacing = 15
   const batteriesCount = 2
   const batteryDia = 14
+  const batteryDiaCleareance = 0.2
+  const batteryConnectorDia = 8.5
   const batteryConnectorHolderThickness = 1
-  const batteryConnectorThickness = 1
-  const batteryMountWidthDiff = innerBodySize[1] + (batteryConnectorHolderThickness + batteryConnectorThickness) * 2
+  const batteryConnectorCutoutThickness = 0.8
+  const batteryMountWidthDiff = innerBodySize[1] + (batteryConnectorHolderThickness + batteryConnectorCutoutThickness) * 2
+  const batterHolderWidth = batterySpacing * (batteriesCount - 1) + batteryDia
+  const batteryConnectorCutoutOffset = ((batteriesCount - 1) * batterySpacing) / 2
 
-  const batteryCutout = translate([0, 0, 2], cube({size: [30, batteryMountWidthDiff, 50], center: [true, true, false]}))
+  const batteryHolderCurvesLength = batteryMountWidthDiff - batteryConnectorHolderThickness
+  // to ensore no connection between the two poles, we offset the bottom holder curves
+  const batteryHolderCurvesOffset = batteryConnectorHolderThickness
+
+  // main cutout
+  const batteryCutoutZ = 2
+  const batteryCutout = translate([0, 0, batteryCutoutZ], cube({size: [batterHolderWidth, batteryMountWidthDiff, 50], center: [true, true, false]}))
   body = difference(body, batteryCutout)
 
   const batterConnectorCutoutShape = hull(
-    translate([0, batteryHolderDia / 2 + batterHolderRoundOffset], circle({r: batteryHolderDia / 2, center: true})),
-    translate([0, batteryHolderDia + batterHolderRoundOffset], square({size: [batteryHolderDia, batteryHolderDia], center: true}))
+    translate([0, batteryConnectorDia / 2 + batterHolderRoundOffset], circle({r: batteryConnectorDia / 2, center: true})),
+    translate([0, batteryConnectorDia + batterHolderRoundOffset], square({size: [batteryConnectorDia, batteryConnectorDia], center: true}))
   )
-  const batterConnectorHolderShape = translate([0, batteryHolderDia / 2], square({size: [batterHolderWidth, batteryHolderHeight], center: true}))
+  const batterConnectorHolderShape = translate([0, batteryHolderHeight / 2], square({size: [batterHolderWidth, batteryHolderHeight], center: true}))
+  const allBatteryConnectorCutouts = union(
+    Array(batteriesCount).fill(0).map((_, index) => translate([index * (batterySpacing) - batteryConnectorCutoutOffset, 0], batterConnectorCutoutShape))
+  )
+  const batterConnectorsHolderShape = difference(batterConnectorHolderShape, allBatteryConnectorCutouts)
 
-  const batterHolderShape = difference(
-    hull(
-      Array(batteriesCount).fill(0).map((_, index) => translate([index * (batteryDia + batterySpacing), 0], batterConnectorHolderShape))
-    ),
-    union(
-      Array(batteriesCount).fill(0).map((_, index) => translate([index * (batteryDia + batterySpacing), 0], batterConnectorCutoutShape))
-    )
-  )
   console.log('innerBodySize', innerBodySize)
-  const batterHolder = color('red', linear_extrude({height: batteryConnectorHolderThickness}, batterHolderShape))
+  const batterHolder = color('red', linear_extrude({height: batteryConnectorHolderThickness}, batterConnectorsHolderShape))
   body = union(body,
-    translate([-10, -innerBodySize[1] / 2, 3], rotate([90, 0, 0], batterHolder)),
-    translate([-10, innerBodySize[1] / 2, 3], mirror([0, 1, 0], rotate([90, 0, 0], batterHolder)))
+    translate([0, -innerBodySize[1] / 2, batteryCutoutZ], rotate([90, 0, 0], batterHolder)),
+    translate([0, innerBodySize[1] / 2, batteryCutoutZ], mirror([0, 1, 0], rotate([90, 0, 0], batterHolder)))
+  )
+
+  const batteryCutoutDia = batteryDia + batteryDiaCleareance
+  const batterCutoutShape = hull(
+    translate([0, batteryCutoutDia / 2], circle({r: batteryCutoutDia / 2, center: true})),
+    translate([0, batteryCutoutDia], square({size: [batteryCutoutDia, batteryCutoutDia], center: true}))
+  )
+  const allBatteryCutouts = union(
+    Array(batteriesCount).fill(0).map((_, index) => translate([index * (batterySpacing) - batteryConnectorCutoutOffset, 0], batterCutoutShape))
+  )
+  const batteryHolderBottomCurvesShape = difference(
+    translate([0, batteryConnectorDia / 2], square({size: [batterHolderWidth + 9, batteryConnectorDia], center: true})),
+    allBatteryCutouts
+  )
+  body = union(
+    body,
+    translate([0, batteryHolderCurvesLength / 2 - batteryHolderCurvesOffset, 0], rotate([90, 0, 0], linear_extrude({height: batteryHolderCurvesLength}, batteryHolderBottomCurvesShape)))
+  )
+
+  // nicer curves for cables
+  const cablePassage = translate([0, 0, 10], rotate([0, 90, 0], cylinder({r: 3, h: innerBodySize[0], center: true})))
+  body = difference(
+    body,
+    cablePassage
   )
 
   if (params.testPrintSlice) {
+    /*body = intersection(
+      body,
+      cube({size: [70, 70, 16], center: [true, true, false]})
+    ) */
     body = intersection(
       body,
-      cube({size: [70, 70, 15], center: [true, true, false]})
+      translate([30, 0, 0], cube({size: [25, 70, 16], center: [true, true, false]}))
     )
   }
 
@@ -240,6 +273,8 @@ const chassis = (params) => {
     })
     results = results.concat(motors)
   }
+
+
   return results
 }
 
